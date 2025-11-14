@@ -1,0 +1,26 @@
+# Go 编译产物
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.out
+*.test
+*.prof
+dist/
+build/
+
+# 依赖缓存
+go.sum
+go.mod.cache/
+
+# 环境变量文件（本地开发用，不提交）
+.env
+.env.local
+.env.*.local
+
+# IDE 配置
+.idea/
+.vscode/
+*.swp
+*.swo

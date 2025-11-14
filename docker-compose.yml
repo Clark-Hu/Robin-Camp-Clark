@@ -1,0 +1,65 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: movies-pg
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: movies
+      POSTGRES_PASSWORD: moviespass
+      POSTGRES_DB: movies
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U movies -d movies"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  migrate:
+    image: migrate/migrate:v4.17.0
+    container_name: movies-migrate
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./db/migrations:/migrations:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      migrate -path=/migrations -database "postgres://movies:moviespass@postgres:5432/movies?sslmode=disable" up
+
+  app:
+    build: .
+    container_name: movies-app
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      PORT: ${PORT:-8080}
+      AUTH_TOKEN: ${AUTH_TOKEN:-changeme}
+      DB_URL: ${DB_URL:-postgres://movies:moviespass@postgres:5432/movies?sslmode=disable}
+      BOXOFFICE_URL: ${BOXOFFICE_URL:-https://apifoxmock.com/m1/7149601-6873494-default}
+      BOXOFFICE_API_KEY: ${BOXOFFICE_API_KEY:-changeme}
+      BOXOFFICE_TIMEOUT_SECS: ${BOXOFFICE_TIMEOUT_SECS:-5}
+      SERVER_READ_TIMEOUT: ${SERVER_READ_TIMEOUT:-15}
+      SERVER_WRITE_TIMEOUT: ${SERVER_WRITE_TIMEOUT:-15}
+      SERVER_IDLE_TIMEOUT: ${SERVER_IDLE_TIMEOUT:-60}
+      DB_MAX_CONNS: ${DB_MAX_CONNS:-20}
+      DB_MIN_CONNS: ${DB_MIN_CONNS:-2}
+      DB_MAX_CONN_IDLE_SECS: ${DB_MAX_CONN_IDLE_SECS:-300}
+      DB_MAX_CONN_LIFETIME_SECS: ${DB_MAX_CONN_LIFETIME_SECS:-3600}
+      DB_CONN_TIMEOUT_SECS: ${DB_CONN_TIMEOUT_SECS:-10}
+      DB_STATEMENT_CACHE_CAPACITY: ${DB_STATEMENT_CACHE_CAPACITY:-256}
+    ports:
+      - "8080:8080"
+
+volumes:
+  pgdata:
