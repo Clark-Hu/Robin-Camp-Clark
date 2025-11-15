@@ -211,6 +211,7 @@ stage2_basic_crud() {
             if echo "$response" | jq -e '.items[0] | has("id") and has("title") and has("releaseDate") and has("boxOffice")' >/dev/null; then
                 log_success "Movie response structure is correct"
             else
+                log_info $response
                 log_error "Movie response structure is incorrect"
             fi
         else

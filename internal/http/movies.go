@@ -55,7 +55,7 @@ type movieResponse struct {
 	Distributor *string            `json:"distributor,omitempty"`
 	Budget      *int64             `json:"budget,omitempty"`
 	MpaRating   *string            `json:"mpaRating,omitempty"`
-	BoxOffice   *boxOfficeResponse `json:"boxOffice,omitempty"`
+	BoxOffice   *boxOfficeResponse `json:"boxOffice"`
 }
 
 type boxOfficeResponse struct {
@@ -364,7 +364,7 @@ func (s *Server) respondDecodeError(w http.ResponseWriter, err error) {
 	case errors.Is(err, io.EOF):
 		s.respondError(w, http.StatusUnprocessableEntity, "VALIDATION_ERROR", "Request body cannot be empty")
 	default:
-		s.respondError(w, http.StatusBadRequest, "BAD_REQUEST", "Unable to parse request body")
+		s.respondError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Unable to parse request body")
 	}
 }
 

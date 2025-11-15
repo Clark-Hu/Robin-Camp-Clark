@@ -1,4 +1,4 @@
-version: "3.9"
+ 
 
 services:
   postgres:
@@ -28,9 +28,12 @@ services:
         condition: service_healthy
     volumes:
       - ./db/migrations:/migrations:ro
-    entrypoint: ["/bin/sh", "-c"]
-    command: >
-      migrate -path=/migrations -database "postgres://movies:moviespass@postgres:5432/movies?sslmode=disable" up
+    entrypoint:
+      - /migrate
+    command:
+      - -path=/migrations
+      - -database=postgres://movies:moviespass@postgres:5432/movies?sslmode=disable
+      - up
 
   app:
     build: .
@@ -59,7 +62,7 @@ services:
       DB_CONN_TIMEOUT_SECS: ${DB_CONN_TIMEOUT_SECS:-10}
       DB_STATEMENT_CACHE_CAPACITY: ${DB_STATEMENT_CACHE_CAPACITY:-256}
     ports:
-      - "8080:8080"
+      - "${HOST_PORT:-8080}:8080"
 
 volumes:
   pgdata:
