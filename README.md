@@ -88,3 +88,7 @@ The `.env` / `.env.example` files demonstrate how these variables can be organiz
 - With the handlers implemented, local development can proceed to the verification stage. Launch the server (`./scripts/run-local.sh` or `docker compose up --build`) and run the provided `./e2e-test.sh` once the `/healthz` endpoint reports healthy.
 - Add unit tests around repositories or handler helpers as needed. For regression coverage, the provided E2E script exercises authentication, pagination, box office enrichment fallbacks, and validation errors (422 responses).
 - Keep iterating on this README to describe the final architecture, trade-offs, and future improvements before submission.
+
+
+##  Make 
+- 启动加入参数-d可以后台启动，若希望前台运行输出日志，去掉-d
