@@ -56,6 +56,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        
+      - name: Create .env from template
+        run: cp .env.example .env
+
+      - name: Inject secrets
+        run: |
+          echo "AUTH_TOKEN=${{ secrets.AUTH_TOKEN }}" >> .env
+          echo "BOXOFFICE_API_KEY=${{ secrets.BOXOFFICE_API_KEY }}" >> .env
+          echo "DB_URL=${{ secrets.DB_URL }}" >> .env
 
       - name: Set up Docker Buildx (for compose)
         uses: docker/setup-buildx-action@v3
