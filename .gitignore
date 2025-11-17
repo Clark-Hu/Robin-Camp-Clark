@@ -11,7 +11,6 @@ dist/
 build/
 
 # 依赖缓存
-go.sum
 go.mod.cache/
 
 # 环境变量文件（本地开发用，不提交）
