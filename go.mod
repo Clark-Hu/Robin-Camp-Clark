@@ -1,4 +1,4 @@
-module github.com/Clark-Hu/Robin-Camp-Clark
+module github.com/Robin-Camp/Robin-Camp
 
 go 1.22
 

@@ -27,7 +27,6 @@ CREATE TABLE IF NOT EXISTS movies (
     box_office JSONB,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    CONSTRAINT uq_movies_title UNIQUE (title),
     CONSTRAINT chk_movies_box_office_schema CHECK (
         box_office IS NULL OR (
             box_office ? 'revenue'

@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Clark-Hu/Robin-Camp-Clark/internal/domain"
+	"github.com/Robin-Camp/Robin-Camp/internal/domain"
 )
 
 // MoviesRepository provides persistence helpers for movie entities.
@@ -85,18 +85,38 @@ func (r *MoviesRepository) Create(ctx context.Context, params MovieCreateParams)
 	return scanMovie(row)
 }
 
-// GetByTitle fetches a movie by its unique title.
-func (r *MoviesRepository) GetByTitle(ctx context.Context, title string) (domain.Movie, error) {
-	query := fmt.Sprintf(`SELECT %s FROM movies WHERE title = $1`, movieColumns)
-	row := r.pool.QueryRow(ctx, query, title)
-	movie, err := scanMovie(row)
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return domain.Movie{}, ErrNotFound
-		}
-		return domain.Movie{}, err
+// FindByKeys fetches movies matching title with optional releaseDate/genre to disambiguate.
+func (r *MoviesRepository) FindByKeys(ctx context.Context, title string, releaseDate *time.Time, genre *string) ([]domain.Movie, error) {
+	where := []string{"title = $1"}
+	args := []interface{}{title}
+	if releaseDate != nil {
+		where = append(where, fmt.Sprintf("release_date = $%d", len(args)+1))
+		args = append(args, *releaseDate)
 	}
-	return movie, nil
+	if genre != nil {
+		where = append(where, fmt.Sprintf("genre = $%d", len(args)+1))
+		args = append(args, *genre)
+	}
+
+	query := fmt.Sprintf(`SELECT %s FROM movies WHERE %s ORDER BY created_at DESC`, movieColumns, strings.Join(where, " AND "))
+	rows, err := r.pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []domain.Movie
+	for rows.Next() {
+		movie, err := scanMovie(rows)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, movie)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return results, nil
 }
 
 // GetByID fetches a movie by its identifier.
@@ -307,4 +327,16 @@ func DecodeCursor(token string) (*MovieCursor, error) {
 		return nil, fmt.Errorf("invalid cursor payload: %w", err)
 	}
 	return &cursor, nil
+}
+
+// GetByTitle fetches the first movie matching a title. Ambiguous results return ErrNotFound.
+func (r *MoviesRepository) GetByTitle(ctx context.Context, title string) (domain.Movie, error) {
+	movies, err := r.FindByKeys(ctx, title, nil, nil)
+	if err != nil {
+		return domain.Movie{}, err
+	}
+	if len(movies) != 1 {
+		return domain.Movie{}, ErrNotFound
+	}
+	return movies[0], nil
 }

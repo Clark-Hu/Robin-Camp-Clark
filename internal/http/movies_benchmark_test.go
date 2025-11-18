@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Clark-Hu/Robin-Camp-Clark/internal/repository"
+	"github.com/Robin-Camp/Robin-Camp/internal/repository"
 )
 
 func BenchmarkHandleSubmitRating(b *testing.B) {
@@ -27,9 +27,9 @@ func BenchmarkHandleSubmitRating(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		payload := []byte(`{"rating":4.0}`)
-		req := httptest.NewRequest(http.MethodPost, "/movies/Benchmark%20Movie/ratings", bytes.NewReader(payload))
+		req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/movies/%s/ratings", movie.ID), bytes.NewReader(payload))
 		req.Header.Set("X-Rater-Id", fmt.Sprintf("bench-%d", i))
-		req = attachTitleParam(req, movie.Title)
+		req = attachIDParam(req, movie.ID)
 		rec := httptest.NewRecorder()
 
 		srv.handleSubmitRating(rec, req)

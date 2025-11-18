@@ -10,11 +10,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Clark-Hu/Robin-Camp-Clark/internal/boxoffice"
-	"github.com/Clark-Hu/Robin-Camp-Clark/internal/config"
-	httpserver "github.com/Clark-Hu/Robin-Camp-Clark/internal/http"
-	"github.com/Clark-Hu/Robin-Camp-Clark/internal/repository"
-	"github.com/Clark-Hu/Robin-Camp-Clark/internal/store"
+	"github.com/Robin-Camp/Robin-Camp/internal/boxoffice"
+	"github.com/Robin-Camp/Robin-Camp/internal/config"
+	httpserver "github.com/Robin-Camp/Robin-Camp/internal/http"
+	"github.com/Robin-Camp/Robin-Camp/internal/repository"
+	"github.com/Robin-Camp/Robin-Camp/internal/store"
 )
 
 func main() {

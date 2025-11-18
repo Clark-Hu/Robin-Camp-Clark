@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Clark-Hu/Robin-Camp-Clark/internal/domain"
+	"github.com/Robin-Camp/Robin-Camp/internal/domain"
 )
 
 // ErrNotFound is returned when upstream cannot find the requested movie.

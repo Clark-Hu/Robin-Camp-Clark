@@ -21,9 +21,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Clark-Hu/Robin-Camp-Clark/internal/boxoffice"
-	"github.com/Clark-Hu/Robin-Camp-Clark/internal/config"
-	"github.com/Clark-Hu/Robin-Camp-Clark/internal/repository"
+	"github.com/Robin-Camp/Robin-Camp/internal/boxoffice"
+	"github.com/Robin-Camp/Robin-Camp/internal/config"
+	"github.com/Robin-Camp/Robin-Camp/internal/repository"
 )
 
 // fakeBoxOffice returns a stub client for handler tests.
@@ -137,7 +137,7 @@ func TestHandleSubmitRating_InvalidRating(t *testing.T) {
 	srv := buildTestServer(t)
 
 	// Precreate movie
-	_, err := srv.repo.Movies.Create(context.Background(), repository.MovieCreateParams{
+	movie, err := srv.repo.Movies.Create(context.Background(), repository.MovieCreateParams{
 		Title:       "Test",
 		Genre:       "Action",
 		ReleaseDate: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
@@ -147,9 +147,9 @@ func TestHandleSubmitRating_InvalidRating(t *testing.T) {
 	}
 
 	payload, _ := json.Marshal(map[string]float32{"rating": 6.0})
-	req := httptest.NewRequest(http.MethodPost, "/movies/Test/ratings", bytes.NewBuffer(payload))
+	req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/movies/%s/ratings", movie.ID), bytes.NewBuffer(payload))
 	req.Header.Set("X-Rater-Id", "user1")
-	req = attachTitleParam(req, "Test")
+	req = attachIDParam(req, movie.ID)
 	rec := httptest.NewRecorder()
 
 	srv.handleSubmitRating(rec, req)
@@ -193,8 +193,8 @@ func TestHandleListMovies_InvalidYear(t *testing.T) {
 
 func TestHandleGetRating_NotFound(t *testing.T) {
 	srv := buildTestServer(t)
-	req := httptest.NewRequest(http.MethodGet, "/movies/Nope/rating", nil)
-	req = attachTitleParam(req, "Nope")
+	req := httptest.NewRequest(http.MethodGet, "/movies/00000000-0000-0000-0000-000000000000/rating", nil)
+	req = attachIDParam(req, "00000000-0000-0000-0000-000000000000")
 	rec := httptest.NewRecorder()
 
 	srv.handleGetRating(rec, req)
@@ -203,8 +203,8 @@ func TestHandleGetRating_NotFound(t *testing.T) {
 	}
 }
 
-func attachTitleParam(req *http.Request, title string) *http.Request {
+func attachIDParam(req *http.Request, id string) *http.Request {
 	ctx := chi.NewRouteContext()
-	ctx.URLParams.Add("title", title)
+	ctx.URLParams.Add("id", id)
 	return req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, ctx))
 }

@@ -152,6 +152,9 @@ stage2_basic_crud() {
         movie1_id=$(echo "$response" | jq -r '.id')
         if [[ "$movie1_id" != "null" && -n "$movie1_id" ]]; then
             log_success "Movie created successfully with ID: $movie1_id"
+            movie1_title="Test Movie 1"
+            movie1_release="2023-01-15"
+            movie1_genre="Action"
             
             # Verify box office field is null (due to upstream failure)
             box_office=$(echo "$response" | jq -r '.boxOffice')
@@ -186,6 +189,9 @@ stage2_basic_crud() {
         movie2_id=$(echo "$response" | jq -r '.id')
         if [[ "$movie2_id" != "null" && -n "$movie2_id" ]]; then
             log_success "Movie 'Inception' created successfully with ID: $movie2_id"
+            movie2_title="Inception"
+            movie2_release="2010-07-16"
+            movie2_genre="Sci-Fi"
             
             # Check if location header is present
             # Note: We can't easily check headers with this setup, but the API should include it
@@ -214,6 +220,15 @@ stage2_basic_crud() {
                 log_info $response
                 log_error "Movie response structure is incorrect"
             fi
+
+            if [[ -n "${movie1_title:-}" ]]; then
+                combo_match=$(echo "$response" | jq -e --arg t "$movie1_title" --arg rd "$movie1_release" --arg g "$movie1_genre" '.items[] | select(.title == $t and .releaseDate == $rd and .genre == $g)')
+                if [[ $? -eq 0 ]]; then
+                    log_success "Listing contains created movie matching title+releaseDate+genre"
+                else
+                    log_warning "Listing did not include movie $movie1_title with expected combination"
+                fi
+            fi
         else
             log_error "Expected at least 2 movies, got $items"
         fi
@@ -231,7 +246,7 @@ stage3_rating_system() {
     rating_data='{"rating": 4.5}'
     
     # Try 201 first (new rating), then 200 (upsert)
-    if response=$(make_request "POST" "/movies/Test Movie 1/ratings" "-H 'X-Rater-Id: user123'" "$rating_data" 201) 2>/dev/null; then
+    if response=$(make_request "POST" "/movies/${movie1_id}/ratings" "-H 'X-Rater-Id: user123'" "$rating_data" 201) 2>/dev/null; then
         rater_id=$(echo "$response" | jq -r '.raterId')
         rating_value=$(echo "$response" | jq -r '.rating')
         if [[ "$rater_id" == "user123" && "$rating_value" == "4.5" ]]; then
@@ -239,7 +254,7 @@ stage3_rating_system() {
         else
             log_error "Rating response incorrect - raterId: $rater_id, rating: $rating_value"
         fi
-    elif response=$(make_request "POST" "/movies/Test Movie 1/ratings" "-H 'X-Rater-Id: user123'" "$rating_data" 200) 2>/dev/null; then
+    elif response=$(make_request "POST" "/movies/${movie1_id}/ratings" "-H 'X-Rater-Id: user123'" "$rating_data" 200) 2>/dev/null; then
         rater_id=$(echo "$response" | jq -r '.raterId')
         rating_value=$(echo "$response" | jq -r '.rating')
         if [[ "$rater_id" == "user123" && "$rating_value" == "4.5" ]]; then
@@ -255,7 +270,7 @@ stage3_rating_system() {
     log_info "Updating existing rating for 'Test Movie 1'..."
     updated_rating_data='{"rating": 3.5}'
     
-    if response=$(make_request "POST" "/movies/Test Movie 1/ratings" "-H 'X-Rater-Id: user123'" "$updated_rating_data" 200); then
+    if response=$(make_request "POST" "/movies/${movie1_id}/ratings" "-H 'X-Rater-Id: user123'" "$updated_rating_data" 200); then
         rating_value=$(echo "$response" | jq -r '.rating')
         if [[ "$rating_value" == "3.5" ]]; then
             log_success "Rating updated successfully (Upsert semantics working)"
@@ -269,9 +284,9 @@ stage3_rating_system() {
     # Add another rating from different user
     log_info "Adding rating from different user..."
     # Try 201 first (new rating), then 200 (upsert)
-    if response=$(make_request "POST" "/movies/Test Movie 1/ratings" "-H 'X-Rater-Id: user456'" '{"rating": 4.0}' 201) 2>/dev/null; then
+    if response=$(make_request "POST" "/movies/${movie1_id}/ratings" "-H 'X-Rater-Id: user456'" '{"rating": 4.0}' 201) 2>/dev/null; then
         log_success "Second rating added successfully (201)"
-    elif response=$(make_request "POST" "/movies/Test Movie 1/ratings" "-H 'X-Rater-Id: user456'" '{"rating": 4.0}' 200) 2>/dev/null; then
+    elif response=$(make_request "POST" "/movies/${movie1_id}/ratings" "-H 'X-Rater-Id: user456'" '{"rating": 4.0}' 200) 2>/dev/null; then
         log_success "Second rating upserted successfully (200)"
     else
         log_error "Failed to add second rating - unexpected status code"
@@ -279,7 +294,7 @@ stage3_rating_system() {
     
     # Test rating aggregation
     log_info "Testing rating aggregation for 'Test Movie 1'..."
-    if response=$(make_request "GET" "/movies/Test Movie 1/rating" "" "" 200); then
+    if response=$(make_request "GET" "/movies/${movie1_id}/rating" "" "" 200); then
         average=$(echo "$response" | jq -r '.average')
         count=$(echo "$response" | jq -r '.count')
         
@@ -313,12 +328,20 @@ stage3_rating_system() {
 stage4_search_pagination() {
     echo -e "\n${BLUE}=== STAGE 4: Search and Pagination ===${NC}"
     
-    # Test keyword search
-    log_info "Testing keyword search with 'q=Test'..."
-    if response=$(make_request "GET" "/movies?q=Test" "" "" 200); then
+    # Test keyword search with composite filters
+    encoded_title=$(jq -rn --arg v "${movie1_title:-Test Movie 1}" '$v|@uri')
+    encoded_genre=$(jq -rn --arg v "${movie1_genre:-Action}" '$v|@uri')
+    release_year=$(echo "${movie1_release:-2023-01-01}" | cut -d- -f1)
+    log_info "Testing keyword search with composite filters..."
+    if response=$(make_request "GET" "/movies?q=${encoded_title}&genre=${encoded_genre}&year=${release_year}" "" "" 200); then
         items=$(echo "$response" | jq -r '.items | length')
         if [[ "$items" -ge 1 ]]; then
             log_success "Keyword search returned $items results"
+            if echo "$response" | jq -e --arg t "${movie1_title:-Test Movie 1}" --arg rd "${movie1_release:-2023-01-01}" --arg g "${movie1_genre:-Action}" '.items[] | select(.title == $t and .releaseDate == $rd and .genre == $g)' >/dev/null; then
+                log_success "Composite search matched the expected movie"
+            else
+                log_warning "Composite search did not match expected movie"
+            fi
         else
             log_warning "Keyword search returned no results"
         fi
@@ -412,7 +435,7 @@ stage5_auth_permissions() {
     
     # Test rating submission without X-Rater-Id (should return 401)
     log_info "Testing rating submission without X-Rater-Id (expecting 401)..."
-    if make_request "POST" "/movies/Test Movie 1/ratings" "" '{"rating":4.0}' 401 >/dev/null; then
+    if make_request "POST" "/movies/${movie1_id}/ratings" "" '{"rating":4.0}' 401 >/dev/null; then
         log_success "Correctly returned 401 for missing X-Rater-Id"
     else
         log_error "Should return 401 for missing X-Rater-Id"
@@ -420,7 +443,7 @@ stage5_auth_permissions() {
     
     # Test rating submission with empty X-Rater-Id (should return 401)
     log_info "Testing rating submission with empty X-Rater-Id (expecting 401)..."
-    if make_request "POST" "/movies/Test Movie 1/ratings" "-H 'X-Rater-Id:'" '{"rating":4.0}' 401 >/dev/null; then
+    if make_request "POST" "/movies/${movie1_id}/ratings" "-H 'X-Rater-Id:'" '{"rating":4.0}' 401 >/dev/null; then
         log_success "Correctly returned 401 for empty X-Rater-Id"
     else
         log_error "Should return 401 for empty X-Rater-Id"
@@ -433,7 +456,7 @@ stage6_error_handling() {
     
     # Test rating aggregation for non-existent movie (should return 404)
     log_info "Testing rating aggregation for non-existent movie (expecting 404)..."
-    if make_request "GET" "/movies/NonExistentMovie/rating" "" "" 404 >/dev/null; then
+    if make_request "GET" "/movies/00000000-0000-0000-0000-000000000000/rating" "" "" 404 >/dev/null; then
         log_success "Correctly returned 404 for non-existent movie rating"
     else
         log_error "Should return 404 for non-existent movie rating"
@@ -441,7 +464,7 @@ stage6_error_handling() {
     
     # Test rating submission for non-existent movie (should return 404)
     log_info "Testing rating submission for non-existent movie (expecting 404)..."
-    if make_request "POST" "/movies/NonExistentMovie/ratings" "-H 'X-Rater-Id: user123'" '{"rating":4.0}' 404 >/dev/null; then
+    if make_request "POST" "/movies/00000000-0000-0000-0000-000000000000/ratings" "-H 'X-Rater-Id: user123'" '{"rating":4.0}' 404 >/dev/null; then
         log_success "Correctly returned 404 for rating submission to non-existent movie"
     else
         log_error "Should return 404 for rating submission to non-existent movie"
@@ -449,13 +472,13 @@ stage6_error_handling() {
     
     # Test invalid rating values (should return 422)
     log_info "Testing invalid rating value (expecting 422)..."
-    if make_request "POST" "/movies/Test Movie 1/ratings" "-H 'X-Rater-Id: user999'" '{"rating":6.0}' 422 >/dev/null; then
+    if make_request "POST" "/movies/${movie1_id}/ratings" "-H 'X-Rater-Id: user999'" '{"rating":6.0}' 422 >/dev/null; then
         log_success "Correctly returned 422 for invalid rating value"
     else
         log_error "Should return 422 for invalid rating value"
     fi
     
-    if make_request "POST" "/movies/Test Movie 1/ratings" "-H 'X-Rater-Id: user999'" '{"rating":0.25}' 422 >/dev/null; then
+    if make_request "POST" "/movies/${movie1_id}/ratings" "-H 'X-Rater-Id: user999'" '{"rating":0.25}' 422 >/dev/null; then
         log_success "Correctly returned 422 for invalid rating step"
     else
         log_error "Should return 422 for invalid rating step"

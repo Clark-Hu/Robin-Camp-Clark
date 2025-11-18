@@ -5,7 +5,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Clark-Hu/Robin-Camp-Clark/internal/store"
+	"github.com/Robin-Camp/Robin-Camp/internal/store"
 )
 
 // ErrNotFound indicates the requested entity does not exist.

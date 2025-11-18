@@ -15,9 +15,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Clark-Hu/Robin-Camp-Clark/internal/boxoffice"
-	"github.com/Clark-Hu/Robin-Camp-Clark/internal/domain"
-	"github.com/Clark-Hu/Robin-Camp-Clark/internal/repository"
+	"github.com/Robin-Camp/Robin-Camp/internal/boxoffice"
+	"github.com/Robin-Camp/Robin-Camp/internal/domain"
+	"github.com/Robin-Camp/Robin-Camp/internal/repository"
 )
 
 const maxRequestBody = 1 << 20 // 1 MiB
@@ -112,6 +112,24 @@ func (s *Server) handleListMovies(w http.ResponseWriter, r *http.Request) {
 		resp.NextCursor = result.NextCursor
 	}
 	s.respondJSON(w, http.StatusOK, resp)
+}
+
+func (s *Server) handleGetMovie(w http.ResponseWriter, r *http.Request) {
+	id, err := decodeMovieIDParam(r)
+	if err != nil {
+		s.respondError(w, http.StatusBadRequest, "BAD_REQUEST", err.Error())
+		return
+	}
+	movie, err := s.repo.Movies.GetByID(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			s.respondError(w, http.StatusNotFound, "NOT_FOUND", "Resource not found")
+			return
+		}
+		s.respondError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to fetch movie")
+		return
+	}
+	s.respondJSON(w, http.StatusOK, toMovieResponse(movie))
 }
 
 func buildMovieFilters(query url.Values) (repository.MovieListFilters, error) {
@@ -232,7 +250,7 @@ func (s *Server) enrichMovieWithBoxOffice(ctx context.Context, movie domain.Movi
 }
 
 func (s *Server) handleSubmitRating(w http.ResponseWriter, r *http.Request) {
-	title, err := decodeTitleParam(r)
+	id, err := decodeMovieIDParam(r)
 	if err != nil {
 		s.respondError(w, http.StatusBadRequest, "BAD_REQUEST", err.Error())
 		return
@@ -244,7 +262,7 @@ func (s *Server) handleSubmitRating(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	movie, err := s.repo.Movies.GetByTitle(r.Context(), title)
+	movie, err := s.repo.Movies.GetByID(r.Context(), id)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			s.respondError(w, http.StatusNotFound, "NOT_FOUND", "Resource not found")
@@ -294,13 +312,13 @@ func (s *Server) handleSubmitRating(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleGetRating(w http.ResponseWriter, r *http.Request) {
-	title, err := decodeTitleParam(r)
+	id, err := decodeMovieIDParam(r)
 	if err != nil {
 		s.respondError(w, http.StatusBadRequest, "BAD_REQUEST", err.Error())
 		return
 	}
 
-	movie, err := s.repo.Movies.GetByTitle(r.Context(), title)
+	movie, err := s.repo.Movies.GetByID(r.Context(), id)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			s.respondError(w, http.StatusNotFound, "NOT_FOUND", "Resource not found")
@@ -417,16 +435,12 @@ func firstNonNilInt(primary, fallback *int64) *int64 {
 	return fallback
 }
 
-func decodeTitleParam(r *http.Request) (string, error) {
-	raw := chi.URLParam(r, "title")
-	if raw == "" {
-		return "", fmt.Errorf("missing title parameter")
+func decodeMovieIDParam(r *http.Request) (string, error) {
+	id := chi.URLParam(r, "id")
+	if id == "" {
+		return "", fmt.Errorf("missing movie id")
 	}
-	title, err := url.PathUnescape(raw)
-	if err != nil {
-		return "", fmt.Errorf("invalid title parameter")
-	}
-	return title, nil
+	return id, nil
 }
 
 func (s *Server) verifyBearer(header string) bool {
