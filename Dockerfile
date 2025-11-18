@@ -19,6 +19,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /bin/movies-api ./cmd/serv
 # Runtime
 ##########
 FROM gcr.io/distroless/base-debian12 AS runtime
+
 WORKDIR /app
 
 COPY --from=builder /bin/movies-api /app/movies-api

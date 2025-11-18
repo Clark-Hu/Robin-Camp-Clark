@@ -80,9 +80,9 @@ docker-ps:
 
 test-e2e:
 	@echo ">> waiting for health at $(BASE_URL)"
-	@BASE_URL=$(BASE_URL) $(WAIT_SCRIPT)
+	@env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY -u ALL_PROXY -u all_proxy -u NO_PROXY -u no_proxy BASE_URL=$(BASE_URL) $(WAIT_SCRIPT)
 	@echo ">> executing E2E script $(E2E_SCRIPT)"
-	@$(E2E_SCRIPT)
+	@env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY -u ALL_PROXY -u all_proxy -u NO_PROXY -u no_proxy $(E2E_SCRIPT)
 
 ci-test-e2e: docker-up-detach test-e2e
 	@$(DC) down -v || true
