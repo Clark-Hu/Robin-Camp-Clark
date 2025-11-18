@@ -15,9 +15,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Robin-Camp/Robin-Camp/internal/boxoffice"
-	"github.com/Robin-Camp/Robin-Camp/internal/domain"
-	"github.com/Robin-Camp/Robin-Camp/internal/repository"
+	"github.com/Clark-Hu/Robin-Camp-Clark/internal/boxoffice"
+	"github.com/Clark-Hu/Robin-Camp-Clark/internal/domain"
+	"github.com/Clark-Hu/Robin-Camp-Clark/internal/repository"
 )
 
 const maxRequestBody = 1 << 20 // 1 MiB

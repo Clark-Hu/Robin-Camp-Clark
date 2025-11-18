@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Robin-Camp/Robin-Camp/internal/domain"
+	"github.com/Clark-Hu/Robin-Camp-Clark/internal/domain"
 )
 
 // MoviesRepository provides persistence helpers for movie entities.

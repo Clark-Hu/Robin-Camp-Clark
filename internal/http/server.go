@@ -10,10 +10,10 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
-	"github.com/Robin-Camp/Robin-Camp/internal/boxoffice"
-	"github.com/Robin-Camp/Robin-Camp/internal/config"
-	"github.com/Robin-Camp/Robin-Camp/internal/repository"
-	"github.com/Robin-Camp/Robin-Camp/internal/store"
+	"github.com/Clark-Hu/Robin-Camp-Clark/internal/boxoffice"
+	"github.com/Clark-Hu/Robin-Camp-Clark/internal/config"
+	"github.com/Clark-Hu/Robin-Camp-Clark/internal/repository"
+	"github.com/Clark-Hu/Robin-Camp-Clark/internal/store"
 )
 
 // Server wires HTTP routing, middleware, and handlers.

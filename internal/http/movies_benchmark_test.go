@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Robin-Camp/Robin-Camp/internal/repository"
+	"github.com/Clark-Hu/Robin-Camp-Clark/internal/repository"
 )
 
 func BenchmarkHandleSubmitRating(b *testing.B) {

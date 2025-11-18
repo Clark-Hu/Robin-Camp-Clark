@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/Robin-Camp/Robin-Camp/internal/config"
+	"github.com/Clark-Hu/Robin-Camp-Clark/internal/config"
 )
 
 func TestBuildMovieFilters(t *testing.T) {

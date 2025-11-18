@@ -21,9 +21,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Robin-Camp/Robin-Camp/internal/boxoffice"
-	"github.com/Robin-Camp/Robin-Camp/internal/config"
-	"github.com/Robin-Camp/Robin-Camp/internal/repository"
+	"github.com/Clark-Hu/Robin-Camp-Clark/internal/boxoffice"
+	"github.com/Clark-Hu/Robin-Camp-Clark/internal/config"
+	"github.com/Clark-Hu/Robin-Camp-Clark/internal/repository"
 )
 
 // fakeBoxOffice returns a stub client for handler tests.
